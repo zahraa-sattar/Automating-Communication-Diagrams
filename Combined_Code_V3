@@ -714,8 +714,3 @@ for sm_comp in range(num_sm_comps):
     
     # Making lines between Ethernet Components and Network Switch red to indicate ethernet cables
     line5.Color = 1   # 1 is for red
-
-block = Testing_V1.Block(100, 50, [0, 0], "SWITCH", 0, acad)
-
-block.drawBlock()
-block.insertName(13)
