@@ -1,0 +1,68 @@
+import math
+#import pyautocad
+from pyautocad import Autocad, APoint, aDouble, ACAD
+
+#===========================================================================================================
+# AutoCAD Parent class
+class ACAD_Obj:
+    def __init__(self, Acad, Pos, Name, FontSize):
+        self.Acad = Acad
+        self.Pos = Pos
+        self.Name = Name
+        self.FS = FontSize
+        self.Apt = APoint(self.Pos[0], self.Pos[1], 0)
+        
+        self.Conn = []
+        self.Circ = []
+
+# Various AutoCAD objs for various images to be drawn
+class Block(ACAD_Obj):
+    def __init__(self, Acad, Pos, Name, FS, WidthHeight):
+        super().__init__(Acad, Pos, Name, FS)
+        self.Shape = 'rect'
+        self.WH = WidthHeight
+
+class Circ(ACAD_Obj):
+    def __init__(self, Acad, Pos, Name, FontSize, Rad):
+        super().__init__(Acad, Pos, Name, FontSize)
+        self.Shape = 'circ'
+        self.Rad = Rad
+
+#===========================================================================================================
+# Connection class to define cables and specifics of the cabling
+class Connection:
+    def __init__(self, obj1, obj2):
+        self.Pos_Obj1 = obj1.Pos
+        self.Pos_Obj2 = obj2.Pos
+
+#===========================================================================================================
+# Needs more attention to draw depending on shape (based on obj class)
+def draw(self):
+    doc = self.Acad.doc.Blocks.Add(APoint(0,0,0), self.Name)
+    txt = self.Acad.model.AddText(self.Name, APoint(0,0,0), self.FS)
+    txt.Alignment = ACAD.acAlignmentCenter
+
+    if self.Shape == 'rect':
+        doc.AddPolyline(aDouble(0,0,0, self.WH[0],0,0, self.WH[0],self.WH[1],0, 0,self.WH[1],0, 0,0,0))     
+        txt.TextAlignmentPoint = APoint(self.Pos[0]+self.WH[0]/2, self.Pos[1]+self.WH[1]/2)
+    elif self.Shape == 'circ':
+        doc.AddCircle(APoint(0,0,0), self.Rad)
+        txt.TextAlignmentPoint = APoint(self.Pos[0], self.Pos[1])
+
+    self.Acad.model.InsertBlock(self.Apt, self.Name, 1, 1, 1, 0)
+
+#===========================================================================================================
+# testing and debugging snippets
+acad = Autocad()
+
+# a = Block(acad, (10,30), "Help", 10, (100,50))
+# b = Circ(acad, (0,0), "Help", 10, 50)
+# draw(b)
+
+# list = []
+# for i in range(5):
+#     obj = Circ(acad, ((0+i*100),0), "Obj "+str(i), 10, (1+i)*10)
+#     list.append(obj)
+
+# for o in list:
+#     draw(o)
