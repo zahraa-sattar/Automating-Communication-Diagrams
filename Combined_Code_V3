@@ -1,0 +1,721 @@
+# Program to calculate number of switches and ports needed for a communication diagram
+# M Sorour, Z Sattar, A Mthitshana
+# January 2025
+
+import math
+import pyautocad
+from pyautocad import Autocad, APoint, aDouble, ACAD
+import Testing_V1
+import Testing
+
+print("Zutari")
+# Asks user for number of IEDs, SM Ports, Ethernet ports
+IEDs = int(input("How many IEDs are in your system? \n"))
+sm_comps = int(input("How many Single Mode components would you like connected to your Network Switch? \n"))
+SMs = int(input("How many SM ports do you need per switch? \n"))
+Eth = int(input("How many Ethernet ports do you need per switch? \n"))
+
+numSwitches = 2
+percent_spare = 25
+
+#Calculates the number of IED connections 
+def IedCons(IEDs):
+    ConsPerIED = int(2)
+    ConsNeeded = ConsPerIED*IEDs
+
+    return ConsNeeded  
+    
+print("MMCons =", IedCons(IEDs))
+
+# Finds the type of port needing the greatest number of ports
+def FindGreatestPort(MMPorts, SMPorts, ethPorts):
+    typeList = ["MMPorts", "SMPorts", "EthPorts"]  # port type list
+    portList = [MMPorts, SMPorts, ethPorts]    # number of ports needed for each type of port in the same order
+    max_number = max(portList)
+    position = portList.index(max_number)
+    maxPort = typeList[position]
+
+    # return maxPort, max_number  # returns max number of ports and the type of port 
+    return maxPort
+
+# Finds the type of port needing the greatest number of ports
+def FindGreatestValue(MMPorts, SMPorts, ethPorts):
+    portList = [MMPorts, SMPorts, ethPorts]    # number of ports needed for each type of port in the same order
+    max_number = max(portList)
+
+    return max_number  # returns max number of ports and the type of port 
+
+def MinSwitches(IEDs, SMs, Eth):
+    MM_ports = MMPorts(IEDs)
+    SM_ports = SMPorts(SMs)
+    Eth_ports = EthPorts(Eth)
+
+    maxPortType = FindGreatestPort(CalculatePortsNeeded(IedCons(IEDs)), CalculatePortsNeeded(SMs), CalculatePortsNeeded(Eth))
+
+    if maxPortType == 'MMPorts':
+       return "MMPorts", NumSwitches(MM_ports)
+       # return "MMPorts"
+    elif maxPortType == 'SMPorts':
+       return "SMPorts", NumSwitches(SM_ports)
+      # return "SMPorts"
+    elif maxPortType == 'EthPorts':
+       return "EthPorts", NumSwitches(Eth_ports)
+       # return "EthPorts"
+
+
+# Function that calculates the amount of ports needed including the 25% spare
+def CalculatePortsNeeded(cons):
+    portsNeeded = math.ceil((1 + percent_spare/100) * cons)
+    return portsNeeded
+
+# Calculates the number of MM ports needed per switch pair
+def MMPorts(IEDs):
+    # Initial amount of ports per switch
+    switchPorts = [4, 4]
+
+    portsNeeded = CalculatePortsNeeded(IedCons(IEDs))
+
+    x = 2
+    # loop breaks when the amount of MM ports is greater than the calculated amount of ports needed
+    while  sum(switchPorts) < portsNeeded:
+
+        # adds an additional pair of switches once the max ports, 16, has been reached
+        if sum(switchPorts) % 32 == 0:
+            list = [4,4]
+            switchPorts.extend(list)
+
+        else: 
+            
+            for i in range(len(switchPorts)):
+                
+                # increases number of switches needed in each switch
+                if switchPorts[i] < 16:
+                    switchPorts[i] *= 2
+            
+                elif switchPorts[i] == 16:
+                    switchPorts[i] = 16
+
+        x += 1
+
+    return switchPorts
+
+# Function that calculates the amount of SM ports needed in each switch
+def SMPorts(SMCons):
+    SMSwitchPorts = [4, 4]
+
+    x = 2
+
+    portsNeeded = CalculatePortsNeeded(SMCons)
+
+    while  sum(SMSwitchPorts) < portsNeeded:
+
+        # adds an additional pair of switches once the max ports, 16, has been reached
+        if sum(SMSwitchPorts) % 32 == 0:
+            list = [4,4]
+            SMSwitchPorts.extend(list)
+
+        else: 
+            
+            for i in range(len(SMSwitchPorts)):
+                
+                # increases number of switches needed in each switch
+                if SMSwitchPorts[i] < 16:
+                    SMSwitchPorts[i] *= 2
+            
+                elif SMSwitchPorts[i] == 16:
+                    SMSwitchPorts[i] = 16
+
+        x += 1
+
+    return SMSwitchPorts
+
+# Function that calculates the amount of Ethernet ports needed in each switch
+def EthPorts(Eth):
+    EthSwitchPorts = [4, 4]
+
+    x = 2
+
+    EthPortsNeeded = CalculatePortsNeeded(Eth)
+
+    while  sum(EthSwitchPorts) < EthPortsNeeded:
+
+        # adds an additional pair of switches once the max ports, 16, has been reached
+        if sum(EthSwitchPorts) % 32 == 0:
+            list = [4,4]
+            EthSwitchPorts.extend(list)
+
+        else: 
+            
+            for i in range(len(EthSwitchPorts)):
+                
+                # increases number of switches needed in each switch
+                if EthSwitchPorts[i] < 16:
+                    EthSwitchPorts[i] *= 2
+            
+                elif EthSwitchPorts[i] == 16:
+                    EthSwitchPorts[i] = 16
+
+        x += 1
+
+    return EthSwitchPorts
+
+# def OrgSwitches(ethPorts, SMPorts, MMPorts):
+#     for i in range(len(MMPorts)):
+
+def NumSwitches(switchPorts):
+
+    return len(switchPorts)
+
+def connections(switchPorts, ethPorts, SMPorts):
+    #MMCons = [[""]] * len(switchPorts)
+
+    MMCons = [[""] for j in range(len(switchPorts))]
+    #MMCons = [[""]]
+
+    for i in range(len(switchPorts)):
+        MMCons[i][0] = "switch" + str(i +1)
+
+    for i in range(len(MMCons)):
+        if i % 2 == 0:
+            for k in range(IEDs - 12):
+                MMCons[i].append("IED" + str(k + 12))
+
+        else:
+            for j in range(IEDs):
+            
+                MMCons[i].append("IED" + str(j + 1))
+
+    
+    # ied = "IED" + str(1)
+    # MMCons[0].append(ied)
+    
+    return MMCons
+
+# Function that asks user for the names and models of the IEDs
+def IEDNames(IEDs):
+    iedNamesArray =[]
+    # Loop that goes through the number of IEDs
+    for i in range(IEDs):
+        # Asks user for model of each IED
+        iedLabel = input("Please enter the model name of IED " + str(i + 1) + "\n")
+        if iedLabel == "":
+            # If no string is entered, the IED is labelled
+            iedNamesArray.append("IED " + str(i + 1))
+        
+        else:
+            iedNamesArray.append(iedLabel)
+
+    return iedNamesArray
+
+# Function thats asks user for the names and models of the single mode components connected to the network switch
+def SMCompNames(sm_comps):
+    sm_comp_names = []
+    # Loop that goes through the number of singe mode connected components
+    for i in range(sm_comps):
+        # Asks user for the name and model of each single mode connected component
+        sm_comp_label = input("Please enter the name of Single Mode component " + str(i + 1) + "\n")
+        if sm_comp_label == "": 
+            # If no string is entered, the component is labelled single mode component + i
+            sm_comp_names.append("SINGLE MODE COMPONENT " + str(i + 1))
+
+        else:
+            sm_comp_names.append(sm_comp_label)  # Otherwise, the array is appened with the name and model entered
+        
+    return sm_comp_names
+
+print("Ports needed =", MMPorts(IEDs))
+print("Greatest number of connections for port =", FindGreatestPort(CalculatePortsNeeded(IedCons(IEDs)), CalculatePortsNeeded(SMs), CalculatePortsNeeded(Eth)))
+# print("Number of Switches needed =", NumSwitches(MMPorts(IEDs)))
+# print("Connections per switch =", connections(MMPorts(IEDs), EthPorts(Eth), SMPorts(SMs)))
+print("The Ethernet ports per switch = ", EthPorts(Eth))
+print("The SM ports per switch =", SMPorts(SMs))
+print("Minimum number of switches needed =", MinSwitches(IEDs, SMs, Eth))
+
+# Start of Drawing code
+
+# inputs from logic and user
+num_switch = NumSwitches(MMPorts(IEDs))
+num_ied = IEDs
+num_sm_comps = sm_comps
+
+p_size = 0
+
+while (p_size < num_switch/2):
+    pw = 1500 + (p_size * 1000)
+    pl = 1300 + (p_size * 700)
+    p_size = p_size + 1
+
+# pw = 2000 # page width
+# pl = 1600 # page length
+
+# labels of components (user input)
+sw_names = ["PRP A SW 1", "PRP B SW 1", "PRP A SW 2", "PRP B SW 2", "PRP A SW 3", "PRP B SW 3"]
+
+# ied_names = ["132/33 kV TRANSFORMER 1 MAIN PUC IED", "132/33 kV TRANSFORMER 1 BACKUP PUC IED", "132/33kV TRANSFORMER 1 AUTOMATIC VOLTAGE REGULATOR IED", "IED 4", "IED 5", "IED 6", "IED 7", "IED 8", "IED 9", "IED 10", "IED 11", "IED 12", "IED 13", "IED 14", "IED 15", "IED 16", "IED 17", "IED 18", "IED 19", "IED 20", "IED 21", "IED 22", "IED 23", "IED 24", "IED 25", "IED 26", "IED 27", "IED 28", "IED 29", "IED 30", "IED 31", "IED 32", "IED 33","IED 34", "IED 35", "IED 36", "IED 37", "IED 38"]
+ied_names = IEDNames(IEDs)
+# ethernet component names (user input)
+# sm_comp_names = ["Meter 1", "Meter 2", "Meter 3", "Meter 4", "Meter 5", "Meter 6", "Meter 7", "Meter 8", "Meter 9", "Meter 10"]
+sm_comp_names = SMCompNames(sm_comps)
+
+print("The names for each IED: ", ied_names)
+print("The names for each single mode component: ", sm_comp_names)
+
+max_ied = 6 # maximum IEDs in a row 
+# max_ied_cluster = 5 # max IEDs in one cluster
+max_eth = max_ied*2 # ieds per 2 switches
+sw_p_col =  2 # switches per column
+
+# maps to keep track of positions of blocks
+sw_map = []
+ied_map = []
+red_map = []
+sm_comp_map = []
+
+# connecting to AutoCAD (must have blank AutoCAD document open)
+acad = Autocad(create_if_not_exists=True)
+print("Drawing name: " + acad.doc.Name)
+
+# Object defs
+ip = APoint(0, 0, 0)
+# IED block
+#dimensions
+# ied_w = 100
+# ied_l = 50
+ied_w = 120
+ied_l = 70
+#block creation
+b1 = acad.doc.Blocks.Add(ip, "ied_block_draft")
+pl1 = b1.AddPolyline(aDouble(0, 0, 0, ied_w, 0, 0, ied_w, ied_l, 0, 0, ied_l, 0, 0, 0, 0))
+
+# Switch block
+#dimensions
+# sw_w = 180
+# sw_l = 50
+sw_w = 230
+sw_l = 90
+#block creation
+b2 = acad.doc.Blocks.Add(ip, "sw_block_draft")
+pl2 = b2.AddPolyline(aDouble(0, 0, 0, sw_w, 0, 0, sw_w, sw_l, 0, 0, sw_l, 0, 0, 0, 0))
+
+# Redundancy block 
+#dimensions
+# red_w = 120
+# red_l = 40
+red_w = 220
+red_l = 90
+#block creation
+b3 = acad.doc.Blocks.Add(ip, "red_block_draft")
+pl3 = b3.AddPolyline(aDouble(0, 0, 0, red_w, 0, 0, red_w, red_l, 0, 0, red_l, 0, 0, 0, 0))
+
+# Network Switch Block
+#dimensions
+# ns_w = 110
+# ns_l = 60
+ns_w = 210
+ns_l = 110
+#block creation
+b4 = acad.doc.Blocks.Add(ip, "ns_block_draft")
+pl4 = b4.AddPolyline(aDouble(0, 0, 0, ns_w, 0, 0, ns_w, ns_l, 0, 0, ns_l, 0, 0, 0, 0))
+
+# Single mode component Blocks
+#dimensions
+# sm_comp_w = 100
+# sm_comp_l = 30
+sm_comp_w = 220
+sm_comp_l = 85
+#block creation
+b5 = acad.doc.Blocks.Add(ip, "eth_block_draft")
+pl5 = b5.AddPolyline(aDouble(0, 0, 0, sm_comp_w, 0, 0, sm_comp_w, sm_comp_l, 0, 0, sm_comp_l, 0, 0, 0, 0))
+
+# Inserting blocks
+
+#Page orientation. 
+num_cols = math.ceil(num_switch/2)
+# print("No of cols: ", num_cols)
+num_rows = math.ceil(num_ied/max_ied/num_cols) #can only be 1 or 2
+# print("No of rows: ", num_rows)
+
+ied_p_row = math.ceil(num_ied/num_rows)
+print("IED per row: ", ied_p_row)
+
+#x spacing for different column conditions
+gap = (pw/num_cols)/6
+minipw = pw - (gap) #*num_cols) #/num_cols
+
+#y spacing for different row conditions
+if (num_rows == 1):
+    ip_ied_y_1 = pl*(3/10)
+    ip_sw_y_1 = pl*(4/5)
+elif (num_rows == 2):
+    ip_ied_y_1 = pl*(3/10)
+    ip_sw_y_1 = pl*(3/5)
+else:
+    num_rows = 2
+    num_cols = math.ceil(num_ied/6/num_rows)
+    ip_ied_y_1 = pl*(3/10)
+    ip_sw_y_1 = pl*(3/5)
+print("No of cols: ", num_cols)
+print("No of rows: ", num_rows)
+
+sw_spacing = minipw/num_switch  # spacing between switches
+# sw_spacing = 9 * (minipw/10)
+
+print(num_switch*6 - num_ied)
+
+if (num_cols == 1):
+    ied_spacing = minipw/ied_p_row/num_cols #spacing between IEDs
+# elif ((num_cols > 1) and ((num_switch*6-num_ied) >= 6)):
+#     ied_spacing = minipw/(num_ied/2)
+elif (num_cols > 1):
+    ied_spacing = minipw/max_ied/num_cols #spacing between IEDs
+
+# ip_sw_x_1 = sw_spacing/2 #insertion point x for first switch
+ip_sw_x_1 = sw_spacing * (1/8)
+ip_ied_x_1 = ied_spacing/2 #insertion point x for first IED
+
+#Inserting switches
+ip_sw_x = ip_sw_x_1 
+ip_sw_y = ip_sw_y_1
+
+switch_counter = 0 # counts how many switches have been placed
+ied_counter = 0
+
+ied_y_offset = 0
+
+for c in range(0, math.floor(num_cols)): # loop through columns
+    for x in range(0, sw_p_col): # placing switches
+
+        # Inserting the switch and naming the switch using functions from the file Testing
+        sw = Testing.Block(acad, [ip_sw_x, ip_sw_y], sw_names[switch_counter], 16, [230, 90])
+        Testing.draw(sw)
+
+        # acad.model.InsertBlock(APoint(ip_sw_x, ip_sw_y, 0), "sw_block_draft", 1, 1, 1, 0)
+        # # adding switch labels
+        # txt2 = acad.model.AddText(sw_names[switch_counter], APoint(sw_w/2, sw_l/2), 16)
+        # txt2.Alignment = ACAD.acAlignmentCenter
+        # txt2.TextAlignmentPoint = APoint(ip_sw_x + sw_w/2, ip_sw_y + sw_l/2)
+
+        sw_map.append([ip_sw_x, ip_sw_y]) # add position to switch map
+        # ip_sw_x = ip_sw_x + sw_spacing
+        if (x == (sw_p_col - 1)):
+            ip_sw_x = ip_sw_x + sw_spacing
+
+        else:
+            ip_sw_x = ip_sw_x + sw_spacing * (15/8)
+
+        switch_counter = switch_counter + 1
+        # print("Switch count: ", switch_counter)
+        if (switch_counter == (num_switch)):
+            break
+
+    #Inserting IEDs
+    # ip_ied_x = ip_ied_x_1
+    ip_ied_y = ip_ied_y_1 #reset y position
+    # print("Col count: ", c)
+    #reset x position (depending on column no.)
+    if (c==0):
+        ip_ied_x = ip_ied_x_1
+    elif (c==1):
+        # ip_ied_x = ip_ied_x_1 + gap + minipw/num_cols 
+        ip_ied_x = ip_ied_x_1 + gap + minipw/num_cols + sw_spacing
+    elif (c==2):
+        # ip_ied_x = ip_ied_x_1 + gap*2 + 2*(minipw/num_cols)
+        ip_ied_x = ip_ied_x_1 + gap*2 + 2*(minipw/num_cols) + 2 * sw_spacing 
+
+    for y in range(0, num_rows): # loop through rows (1 or 2)
+        if (ied_counter >= num_ied):
+            break
+
+        for i in range(0, max_ied): # loop through ieds
+            
+            # Inserting IEDs and naming them using functions from the Testing file
+            ied = Testing.Block(acad, [ip_ied_x, ip_ied_y], ied_names[ied_counter], 8, [120, 70])
+            Testing.draw(ied)
+
+            # acad.model.InsertBlock(APoint(ip_ied_x, ip_ied_y, 0), "ied_block_draft", 1, 1, 1, 0)
+            # txt1 = acad.model.AddMText(APoint(ip_ied_x + ied_l*(0.1), ip_ied_y + ied_l - (ied_l*0.1), 0), ied_w*(0.9), ied_names[ied_counter])
+            # txt1.Height = 8
+            # txt1.Alignment = ACAD.acAlignmentCenter # can use for normal text
+            # txt1.TextAlignmentPoint = APoint(ip_ied_x + ied_w/2, ip_ied_y + ied_l/2)
+
+            ied_map.append([ip_ied_x, ip_ied_y])
+            ied_counter = ied_counter + 1
+            ip_ied_x = ip_ied_x + ied_spacing 
+            # i = i + 1
+            if ((y == 1) and (i == min(math.floor(num_ied/num_rows), max_ied))): # accounting for rounding error (odd number of IEDs in row)
+                if (num_ied%num_rows>0):
+                    acad.model.InsertBlock(APoint(ip_ied_x, ip_ied_y, 0), "ied_block_draft", 1, 1, 1, 0)
+                    ied_map.append([ip_ied_x, ip_ied_y])
+                    ied_counter = ied_counter + 1
+                    ip_ied_x = ip_ied_x + ied_spacing
+                    # i = i + 1
+            # print("IED count: ", ied_counter)
+            if (ied_counter >= num_ied):
+                break
+        
+        #reset x and y positions again according to row
+        if (c==0):
+            ip_ied_x = ip_ied_x_1 + ied_spacing/2
+        elif (c==1):
+            # ip_ied_x = ip_ied_x_1 + gap + minipw/num_cols + ied_spacing/2 
+            ip_ied_x = ip_ied_x_1 + gap + minipw/num_cols + ied_spacing/2 + sw_spacing 
+        elif (c==2):
+            # ip_ied_x = ip_ied_x_1 + 2*gap + 2*(minipw/num_cols) + ied_spacing/2 
+            ip_ied_x = ip_ied_x_1 + 2*gap + 2*(minipw/num_cols) + ied_spacing/2 +  2 * sw_spacing
+        ip_ied_y = pl*(1/5)
+        # y = y + 1
+ 
+        if (ied_counter == num_ied):
+            break
+
+    ip_sw_x = ip_sw_x + gap
+    ip_ied_x = ip_ied_x + gap
+
+# Extra gap between Redundancy Box and switches
+red_gap = 500
+
+# Calculating center of the page for Redundancy Box
+half_num_sws = int(len(sw_map)/2)   # to find mid point of switches
+red_x = ((sw_map[half_num_sws][0] - sw_map[half_num_sws - 1][0]) / 2) + sw_map[half_num_sws - 1][0] + sw_w/2   # places x position of red box in middle of switches
+red_y = ip_sw_y + red_gap 
+
+# red_box = Testing_V1.Block(220, 90, [red_x - red_w/2, red_y - red_l / 2], "REDUNDANCY BOX", 0, acad)
+# red_box.drawBlock()
+# red_box.insertName(13)
+
+# Inserting Redundancy block and creating name using Testing folder
+red_box = Testing.Block(acad, [red_x - red_w/2, red_y - red_l / 2], "REDUNDANCY BOX", 14, [220, 90])
+Testing.draw(red_box)
+
+# # Inserting Redundancy block
+# acad.model.InsertBlock(APoint(red_x - red_w / 2, red_y - red_l / 2, 0), "red_block_draft", 1, 1, 1, 0)
+
+# # Adding a label to the  redundancy block
+# red_label = "REDUNDANCY BOX"
+# txt3 = acad.model.AddText(red_label, APoint(red_x, red_y), 14)
+# txt3.Alignment = ACAD.acAlignmentCenter
+# txt3.TextAlignmentPoint = APoint(red_x, red_y)
+
+# Calculating x position of Network Switch
+ns_gap = 600
+
+# Calculating position for Network Switch
+ns_x = red_x + ns_gap 
+ns_y = red_y 
+
+# Inserting Nework Switch and label using the Testing File
+ns = Testing.Block(acad, [ns_x - ns_w/2, ns_y - ns_l/2], "NETWORK SWITCH", 14, [210, 110])
+Testing.draw(ns)
+
+# Inserting the Network Switch onto drawing
+# acad.model.InsertBlock(APoint(ns_x - ns_w/2, ns_y - ns_l/2, 0), "ns_block_draft", 1, 1, 1, 0)
+
+# # Adding a label to the Network Switch block
+# ns_label = "NETWORK SWITCH"
+# txt4 = acad.model.AddText(ns_label, APoint(ns_x, ns_y), 14)
+# txt4.Alignment = ACAD.acAlignmentCenter
+# txt4.TextAlignmentPoint = APoint(ns_x, ns_y)
+
+# Calculating n dobtaining positions of the ethernet blocks
+sm_ns_gap = 500
+sm_comp_spacing = 110
+
+sm_comp_x = ns_x + sm_ns_gap 
+sm_comp_y = red_y - sm_comp_spacing 
+
+# Inserting single mode component blocks connected to the Network Switch
+for e in range(num_sm_comps):
+
+    sm_comp = Testing.Block(acad, [sm_comp_x - sm_comp_w/2, sm_comp_y - sm_comp_l/2], sm_comp_names[e], 10, [220, 85])
+    Testing.draw(sm_comp)
+    # acad.model.InsertBlock(APoint(sm_comp_x - sm_comp_w/2, sm_comp_y - sm_comp_l/2, 0), "eth_block_draft", 1, 1, 1, 0)
+
+    # txt5 = acad.model.AddText(sm_comp_names[e], APoint(sm_comp_x, sm_comp_y), 10)  # Adding text to the components and changing font size 
+    # txt5.Alignment = ACAD.acAlignmentCenter
+    # txt5.TextAlignmentPoint = APoint(sm_comp_x, sm_comp_y)
+    sm_comp_map.append([sm_comp_x - sm_comp_w/2, sm_comp_y - sm_comp_l/2]) # add position to switch map
+    sm_comp_y += sm_comp_spacing
+   
+# Prints Map arrays of switches ad IEDs
+print("Switch map:")
+print(sw_map)
+
+print("IED map: ")
+print(ied_map)
+
+print("Single Mode Component map: ")
+print(sm_comp_map)
+
+# Drawing lines between blocks
+sw_conn_count = 0 # counts connected switches
+row_flag = False #0 is bottom row, 1 is top row
+# offset variables
+sw_offset = 0
+ied_offset = 0
+k = 0 
+row2_counter = 6
+row3_counter = 0
+row4_counter = 6
+line = 0
+line_spacing_set = 8 # adjusts space between lines
+line_spacing = line_spacing_set
+
+for i in range(num_ied):
+    if (((i)%max_ied == 0) and (i!=0)): # changing over from one row to another, reset row flag
+        row_flag = not(row_flag)
+        k = 0
+        line = 0
+    if (row_flag == False): # bottom row of IEDs
+        sw_offset = 0
+        ied_offset = ied_l
+        line_spacing = line_spacing_set
+    # elif (row_flag == True): # top row of IEDs
+    #     sw_offset = sw_l
+    #     ied_offset = 0
+    #     line_spacing = -line_spacing_set
+    # sw_offset_x = k*(sw_w/max_ied)/2
+    # line = line + 2
+
+    if (num_ied <= (max_ied*2)):
+        sw_offset_x = (i + 1) * (sw_w/(num_ied + 1))
+
+    elif (num_ied > (max_ied*2)):
+        if (i < (max_ied*2)):
+            ied_p_sw = (max_ied*2)
+            sw_offset_x = (i + 1) * (sw_w/(ied_p_sw + 1))
+            
+
+        elif (i >= (max_ied*2))  and (i < 3*(max_ied*2)/2):
+            if (num_ied <= (max_ied*2)*2):
+                new_num_ied = num_ied - (max_ied*2)
+
+            elif (num_ied > (max_ied*2)*2):
+                new_num_ied = 12
+
+            # new_num_ied = 12
+            # sw_offset_x = (k + 1) * (sw_w/(new_num_ied + 1))
+            sw_offset_x = (k + 1) * (sw_w/(new_num_ied + 1))
+            k = k + 1
+        
+        elif (i >= 3*(max_ied*2)/2)  and (i < 2*(max_ied*2)):
+            if (num_ied <= (max_ied*2)*2):
+                new_num_ied = num_ied - (max_ied*2)
+
+            elif (num_ied > (max_ied*2)*2):
+                new_num_ied = 12
+            # new_num_ied = num_ied - (max_ied*2)
+            sw_offset_x = (row2_counter + 1) * (sw_w/(new_num_ied + 1))
+            row2_counter += 1
+
+        elif (i >= 2*(max_ied*2))  and (i < 5*(max_ied*2)/2):
+            # if (num_ied <= (max_ied*2)*2):
+            #     new_num = num_ied - (max_ied*2)
+
+            # elif (num_ied > (max_ied*2)*2):
+            sw3_num_ied = num_ied - (max_ied*2)*2
+
+            sw_offset_x = (row3_counter + 1) * (sw_w/(sw3_num_ied + 1))
+            row3_counter += 1
+
+        elif (i >= 5*(max_ied*2)/2):
+            # if (num_ied <= (max_ied*2)*2):
+            #     new_num_ied = num_ied - (max_ied*2)*2
+
+            if (num_ied > (max_ied*2)*2):
+                new_num_ied = num_ied - (max_ied*2)*2
+
+            sw_offset_x = (row4_counter + 1) * (sw_w/(new_num_ied + 1))
+            row4_counter += 1
+
+    line = line + 2
+
+    #Drawing line from IED[i] to switch 1 (switch[sw_conn_count])
+    # line1 = acad.model.AddPolyline(aDouble(ied_map[i][0] + ied_w/4, ied_map[i][1] + ied_offset, 0, ied_map[i][0] + ied_w/4, ((ied_map[i][1] + ied_offset) + (sw_map[sw_conn_count][1] + sw_offset))/2 + line*line_spacing, 0,sw_map[sw_conn_count][0] + sw_offset_x + sw_w/4, ((ied_map[i][1] + ied_offset) + (sw_map[sw_conn_count][1] + sw_offset))/2 + line*line_spacing, 0,sw_map[sw_conn_count][0] + sw_offset_x + sw_w/4, sw_map[sw_conn_count][1] + sw_offset, 0)) 
+    line1 = acad.model.AddPolyline(aDouble(ied_map[i][0] + ied_w/3, ied_map[i][1] + ied_offset, 0, 
+                                   ied_map[i][0] + ied_w/3, ((ied_map[i][1] + ied_offset) + 
+                                    (sw_map[sw_conn_count][1] + sw_offset))/2 + line*line_spacing, 
+                                    0, sw_map[sw_conn_count][0] + sw_offset_x, 
+                                    ((ied_map[i][1] + ied_offset) + (sw_map[sw_conn_count][1] + 
+                                    sw_offset))/2 + line*line_spacing, 0, sw_map[sw_conn_count][0] 
+                                    + sw_offset_x , sw_map[sw_conn_count][1] + sw_offset, 0))
+    
+    #Drawing line from IED[i] to switch 2 (switch[sw_conn_count + 1])
+    # line2 = acad.model.AddPolyline(aDouble(ied_map[i][0] + 3*(ied_w/4), ied_map[i][1] + ied_offset, 0, ied_map[i][0] + 3*(ied_w/4), ((ied_map[i][1] + ied_offset) + (sw_map[sw_conn_count+1][1] + sw_offset))*0.5 - (ied_l/line_spacing) - line*line_spacing, 0, sw_map[sw_conn_count+1][0] + sw_offset_x + sw_w/4,((ied_map[i][1] + ied_offset) + (sw_map[sw_conn_count+1][1] + sw_offset))*0.5 - (ied_l/line_spacing) - line*line_spacing, 0 ,sw_map[sw_conn_count+1][0] + sw_offset_x + sw_w/4, sw_map[sw_conn_count+1][1] + sw_offset, 0))
+    line2 = acad.model.AddPolyline(aDouble(ied_map[i][0] + 2*(ied_w/3), ied_map[i][1] + ied_offset, 0, 
+                                   ied_map[i][0] + 2*(ied_w/3), ((ied_map[i][1] + ied_offset) +
+                                    (sw_map[sw_conn_count+1][1] + sw_offset))*0.5 - 
+                                    (ied_l/line_spacing) - line*line_spacing, 0, 
+                                    sw_map[sw_conn_count+1][0] + sw_offset_x,
+                                    ((ied_map[i][1] + ied_offset) + (sw_map[sw_conn_count+1][1] +
+                                    sw_offset))*0.5 - (ied_l/line_spacing) - line*line_spacing, 0,
+                                    sw_map[sw_conn_count+1][0] + sw_offset_x, 
+                                    sw_map[sw_conn_count+1][1] + sw_offset, 0))
+
+    # Making the lines between switches and IEDs blue to indicate Multi Mode Fibre Optic cable
+    line1.Color = 151   # 5 is for blue  # 151 is for light blue
+    line2.Color = 151
+
+    # if switches filled by max num of IEDs, move on to next group of switches
+    if ((i + 1) % (max_eth) == 0):
+        sw_conn_count = sw_conn_count + sw_p_col
+
+    # k = k + 1
+
+# Drawing lines between redundancy box and switches
+red_line_break = red_gap/2
+
+# loops through the number of switches to draw the lines per switch to the Redundancy box
+num_sw = int(len(sw_map))
+
+for switch in range(2):
+
+    # line3 = acad.model.AddPolyline(aDouble(red_x - red_w/2 + red_w/(len(sw_map) + 1)*(switch + 1), red_y - red_l/2, 0,
+    #                                red_x - red_w/2 + red_w/(len(sw_map) + 1)*(switch + 1), red_y - red_l/2 - red_line_break + line_spacing*switch, 0,
+    #                                sw_map[switch][0] + sw_w/2, red_y - red_l/2 - red_line_break + line_spacing*switch, 0,
+    #                                 sw_map[switch][0] + sw_w/2, sw_map[switch][1] + sw_l, 0))
+    
+    line3 = acad.model.AddPolyline(aDouble(red_x + red_w/2 - red_w/(3)*(switch + 1), red_y - red_l/2, 0,
+                                   red_x + red_w/2 - red_w/(3)*(switch + 1), red_y - red_l/2 - red_line_break, 0,
+                                   sw_map[half_num_sws - switch][0] + sw_w/2, red_y - red_l/2 - red_line_break, 0,
+                                    sw_map[half_num_sws - switch][0] + sw_w/2, sw_map[half_num_sws - switch][1] + sw_l, 0))
+    
+    # Making lines between switch and Redundancy Box red to indicate ethernet cables
+    line3.Color = 1   # 1 is for red
+
+# Drawing lines between switches
+for sw in range(len(sw_map)):
+    
+    # do not draw lines connecting the switches connected to the Redundancy box or the last switch in the list
+    if (sw == (num_sw/2 - 1)  or sw == num_sw - 1):
+        continue
+
+    # draws lines connecting switches together
+    else: 
+        line6 = acad.model.AddPolyline(aDouble(sw_map[sw][0] + sw_w, sw_map[sw][1] + sw_l/2, 0, 
+                                        sw_map[sw + 1][0], sw_map[sw + 1][1] + sw_l/2, 0))
+    
+    # makes colours of lines red to indicate ethernet cables
+    line6.Color = 1  # 1 is for red
+    
+# Drawing line between Network Switch and Redundancy Box
+line4 = acad.model.AddPolyline(aDouble(red_x + red_w/2, red_y, 0,
+                               ns_x - ns_w/2, ns_y, 0))
+
+# Making lines between network switch and Redundancy box red to indicate ethernet cables
+line4.Color = 1   # 1 is for red
+
+# Drawing line between Ethernet Components and Network Switch
+for sm_comp in range(num_sm_comps):
+    
+    line5 = acad.model.AddPolyline(aDouble(ns_x + ns_w/2, ns_y - ns_l/2 + ns_l/(num_sm_comps + 1)*(sm_comp + 1), 0,
+                                   ns_x + sm_ns_gap/2 - line_spacing * sm_comp, ns_y - ns_l/2 + ns_l/(num_sm_comps + 1)*(sm_comp + 1), 0,
+                                   ns_x + sm_ns_gap/2 - line_spacing * sm_comp, sm_comp_map[sm_comp][1] + sm_comp_l/2, 0,
+                                    sm_comp_map[sm_comp][0], sm_comp_map[sm_comp][1] + sm_comp_l/2, 0))
+    
+    # Making lines between Ethernet Components and Network Switch red to indicate ethernet cables
+    line5.Color = 1   # 1 is for red
+
+block = Testing_V1.Block(100, 50, [0, 0], "SWITCH", 0, acad)
+
+block.drawBlock()
+block.insertName(13)
